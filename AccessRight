@@ -1,0 +1,45 @@
+/// <summary>
+/// input page name
+/// output boolean:
+/// true: if user has role or user is authorized
+/// false: if user is not authorized to visit the page
+/// based on the output we can set the visibility of the page in the menu
+/// </summary>
+/// <param name="page"></param>
+/// <returns>boolean</returns>
+private bool hasUserAccessRightForPage(string page)
+    {
+        string currentUser = System.Web.HttpContext.Current.User.Identity.Name.ToLower();
+        string[] userRoles = System.Web.Security.Roles.GetRolesForUser(currentUser);
+
+        Configuration config = WebConfigurationManager.OpenWebConfiguration("~/");
+        ConfigurationLocationCollection locations = config.Locations;
+
+        foreach (ConfigurationLocation oneLocation in locations)
+        {
+            if (oneLocation.Path.ToLower() != page.ToLower()) continue;
+            Configuration locationConfiguration = oneLocation.OpenConfiguration();
+            AuthorizationSection section = (System.Web.Configuration.AuthorizationSection)locationConfiguration.GetSection("system.web/authorization");
+            foreach (AuthorizationRule autho in section.Rules)
+            {
+                foreach (var role in autho.Roles)
+                {
+                    foreach (var ur in userRoles)
+                    {
+                        if (role.ToString().ToLower() == ur.ToString().ToLower())
+                        {
+                            return true;
+                        }
+                    }
+                }
+                foreach (var user in autho.Users)
+                {
+                    if (user.ToString().ToLower() == currentUser)
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
